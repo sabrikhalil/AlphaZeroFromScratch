@@ -87,10 +87,12 @@ class Self_Play_Agent(Agent ):
         best_action_index = np.argmax(action_probs)
         action = index_to_action[best_action_index]
         board.play_action(action)
-        policy, value = self.model(
+        
+        policy, value = model(
                     torch.tensor(board.get_encoded_state()).unsqueeze(0).to(device)
                 )
-        policy = torch.softmax(policy, axis=1).squeeze(0).cpu().numpy()
+        
+        policy = torch.softmax(policy, axis=1).squeeze(0).detach().cpu().numpy()
         print("value of the state is :",value.item() )
         # Sort actions by their probabilities
         sorted_actions = np.argsort(policy)[::-1]
