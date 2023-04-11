@@ -19,6 +19,7 @@ along with this program; if not, see <http://www.gnu.org/licenses/>.
 """
 import time
 import gc
+import math
 
 from avalam import *
 
@@ -29,17 +30,11 @@ from heuristics import middle_game_wait
 
 class MyAgent(Agent):
     def __init__(self) -> None:
-<<<<<<< Updated upstream
-        self.step_threshold = 16
-        self.node: Node = None
-        self.board = None
-=======
         # The step number where we stop diminishing our allocated time
         self.step_threshold = 12
         self.node: Node = None
         self.board = None
         self.old_Q = 0
->>>>>>> Stashed changes
         super().__init__()
 
     """My Avalam agent."""
@@ -64,15 +59,12 @@ class MyAgent(Agent):
         # Keeping start time
         start = time.time()
         max_step = 0
-        
+
         # First play or retrieve corresponding node
-        if self.node is None or step < self.step_threshold/2:
+        if self.node is None or step <= 2:
             self.node = Node(player, None, None, None, step)
             self.board = Board(percepts=percepts['m'])
-<<<<<<< Updated upstream
-=======
             self.old_Q = player
->>>>>>> Stashed changes
         else:
             found = False
             for n in self.node.successors:
@@ -84,12 +76,7 @@ class MyAgent(Agent):
                     self.node = n
                     self.node.parent = None
                     found = True
-                    print("saved node")
-                    # if (player > 0 and n.U > 0) or (player < 0 and n.U < 0):
-                    #     self.node = n
-                    # else:
-                    #     self.node = Node(player, None, None, None, step)
-                    #     self.board = Board(percepts=percepts['m'])
+                    print("===== saved node =====")
                     break
                 # Else we reverse the action to search another node 
                 else:
@@ -97,7 +84,6 @@ class MyAgent(Agent):
                     self.board.m[n.action[2]][n.action[3]] = n.undo[1]
             # If we didn't found it, we recreate a new node and board
             if not found:
-                print("unfound node")
                 self.node = Node(player, None, None, None, step)
                 self.board = Board(percepts=percepts['m'])
                 self.old_Q = player
@@ -113,7 +99,7 @@ class MyAgent(Agent):
         print("allocated time:",time_left)
 
         # Modify C parameter if falling behind in last selected node
-        Node.update_C(math.exp(max(0,-(self.old_Q/player) + 0.25)) * math.sqrt(2))
+        Node.update_C(math.exp(max(0,0.25-(self.old_Q/player))) * math.sqrt(2))
         print("C parameter:",Node.C)
 
         # MCTS algorithm
@@ -122,7 +108,7 @@ class MyAgent(Agent):
             dummy_board = self.board.clone()
             # Select a node based on our UCB formula
             select = self.node.selection(dummy_board)
-            # If the node was player, we expend it and select one of the new ones
+            # If the node was player, we expand it and select one of the new ones
             if select.expansion(successors_with_tower_score, dummy_board):
                 select = select.selection(dummy_board)
             # Start a simulation on the selected node and recover the score for backpropagation
@@ -136,21 +122,17 @@ class MyAgent(Agent):
 
         # Best action selection
         new_node = self.node.best_action()
-<<<<<<< Updated upstream
-        print("selected action",new_node.action,"with N, U, avg score =",str(new_node.N)+",",str(new_node.U)+",",new_node.U/new_node.N)
-        print(step,"->",max_step)
-
-        # Predicting opponent action and clearing unused tree
-=======
 
         # Saving selected action and clearing unused sub-trees
->>>>>>> Stashed changes
         self.node = new_node
         self.node.parent = None
         self.board = self.board.play_action(new_node.action)
+        self.old_Q = new_node.Q
         gc.collect()
 
         # Returning action
+        print("selected action",new_node.action,"with N, U, Q =",str(new_node.N)+",",str(new_node.U)+",",new_node.Q)
+        print(step,"->",max_step)
         return new_node.action
 
     def hasEvolved(self):

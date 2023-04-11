@@ -17,9 +17,27 @@ You should have received a copy of the GNU General Public License
 along with this program; if not, see <http://www.gnu.org/licenses/>.
 
 """
+import numpy as np 
 
 PLAYER1 = 1
 PLAYER2 = -1
+
+def create_action_dictionary():
+    action_dict = {}
+    index = 0
+    for row in range(9):
+        for col in range(9):
+            for drow in range(-1, 2):
+                for dcol in range(-1, 2):
+                    if drow == 0 and dcol == 0:
+                        continue
+                    action_dict[(row, col, row+drow, col+dcol)] = index
+                    index += 1
+    return action_dict
+
+action_dict = create_action_dictionary()
+
+
 
 class InvalidAction(Exception):
 
@@ -51,6 +69,16 @@ class Board:
                       [ 0,  0,  1, -1,  1, -1,  1, -1,  0],
                       [ 0,  0,  0,  0, -1,  1, -1,  1,  0],
                       [ 0,  0,  0,  0,  0, -1,  1,  0,  0] ]
+    
+    # initial_board = [ [ 0,  0,  1, -1,  0,  0,  0,  0,  0],
+    #                   [ 0,  1, -1,  1, -1,  0,  0,  0,  0],
+    #                   [ 0,  0,  0,  0,  0,  0,  0,  0,  0],
+    #                   [ 0,  0,  0,  0,  0,  0,  0,  0,  0],
+    #                   [ 0,  0,  0,  0,  0,  0,  0,  0,  0],
+    #                   [ 0,  0,  0,  0,  0,  0,  0,  0,  0],
+    #                   [ 0,  0,  0,  0,  0,  0,  0,  0,  0],
+    #                   [ 0,  0,  0,  0,  0,  0,  0,  0,  0],
+    #                   [ 0,  0,  0,  0,  0,  0,  0,  0,  0] ]
 
     def __init__(self, percepts=initial_board, max_height=max_height,
                        invert=False):
@@ -150,6 +178,12 @@ class Board:
             for action in self.get_tower_actions(i, j):
                 yield action
 
+    def get_actions_indices(self):
+        """Yield all valid actions on this board."""
+        for i, j, h in self.get_towers():
+            for action in self.get_tower_actions(i, j):
+                yield action_dict[action]
+
     def play_action(self, action):
         """Play an action if it is valid.
 
@@ -200,6 +234,24 @@ class Board:
                     elif self.m[i][j] == self.max_height:
                         score += 1
         return score
+    
+    def change_perspective(self, player):
+        return Board(percepts = player * self.m)
+    
+    def get_encoded_state(self):
+        rows, cols = len(self.m), len(self.m[0])
+        encoded_state = np.zeros((11, rows, cols))
+
+        for r in range(rows):
+            for c in range(cols):
+                value = self.m[r][c]
+                for i in range(-5, 6):
+                    if value == i:
+                        encoded_state[i + 5, r, c] = 1
+
+        return encoded_state.astype(np.float32)
+
+
 
 
 def dict_to_board(dictio):
